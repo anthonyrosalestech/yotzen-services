@@ -1,23 +1,30 @@
-# ETAPA 1: Compilación
-FROM golang:1.21-alpine AS builder
+# ETAPA 1: Compilación (¡Actualizado a Go 1.22! 🎉)
+FROM golang:1.22-alpine AS builder
+
 RUN apk add --no-cache git
+
 WORKDIR /app
+
+# Copiar archivos de módulos de Go
 COPY go.mod ./
 RUN go mod download
+
+# Copiar el código y la carpeta 'dist' de React
 COPY . .
 
-# 👇 AQUÍ: Cambiamos el nombre del archivo de salida a yotzen-services
+# Compilar el binario removiendo peso innecesario
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o yotzen-services .
 
 # ETAPA 2: Producción
 FROM alpine:3.19
+
 RUN apk add --no-cache ca-certificates tzdata
+
 WORKDIR /app
 
-# 👇 AQUÍ: Copiamos tu archivo con su nombre real
+# Traemos ÚNICAMENTE el archivo ejecutable compilado en la Etapa 1
 COPY --from=builder /app/yotzen-services .
 
 EXPOSE 8080
 
-# 👇 AQUÍ: Ejecutamos tu proyecto con su nombre real
 CMD ["./yotzen-services"]
